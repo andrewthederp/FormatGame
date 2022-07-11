@@ -126,7 +126,7 @@ def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, 
 
 	string = ''.join([row_prefix+row+row_suffix+horizontal_join+'\n' for row in lst])
 	if codeblock:
-		return prefix+'```\n'+string+'\n```'+suffix
+		return '```\n'+prefix+string+suffix+'\n```'
 	return prefix+string+suffix
 
 def format_tictactoe_board(board, *, image=False, bg_color=(210,210,210), x_color=(255, 0, 0), o_color=(0, 0, 255), font_color=(0,0,0), line_color=(0,0,0), strikethrough=None, strikethrough_color=None, font='bahnschrift.ttf', **kwargs):
@@ -242,7 +242,7 @@ def format_chess_game(fen, *, image=False, past_fen=None, ansi_color=False, boar
 
 		board_path = os.path.join(os.path.dirname(__file__), 'chess', board_theme)
 		peice_path = os.path.join(os.path.dirname(__file__), 'chess', peice_theme)
-		im = Image.open(board_path+'\\'+board_theme+'.png').convert('RGBA')
+		im = Image.open(board_path+'/'+board_theme+'.png').convert('RGBA')
 
 		draw = ImageDraw.Draw(im)
 
@@ -271,7 +271,7 @@ def format_chess_game(fen, *, image=False, past_fen=None, ansi_color=False, boar
 
 				if fen_[x][y] != ' ':
 					peice = fen_[x][y]
-					peice = Image.open(f"{peice_path}\\{'w' if peice.isupper() else 'b'}{peice.lower()}.png").convert('RGBA')
+					peice = Image.open(f"{peice_path}/{'w' if peice.isupper() else 'b'}{peice.lower()}.png").convert('RGBA')
 					im.paste(peice, (x_, y_), peice)
 		return im
 	else:
