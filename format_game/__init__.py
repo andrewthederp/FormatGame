@@ -111,13 +111,13 @@ def _flat(fen):
 			fen[num] = int(i)*' '
 	return ''.join(fen)
 
-def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacments={}, codeblock=False, filler_char=None, prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join=''):
+def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacments={}, codeblock=False, filler_char=None, prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None):
 	if (numeric_coordinates and mixed_coordinates) or (numeric_coordinates and alpha_coordinates) or (mixed_coordinates and alpha_coordinates):
 		return
 
 	coordinates = bool(numeric_coordinates or mixed_coordinates or alpha_coordinates)
 	if coordinates:
-		lst = [(filler_char or ' ')+vertical_join+''.join(replacments.get(conversion:=_convert_to_coor(i, numeric_coordinates, mixed_coordinates or alpha_coordinates), conversion)+vertical_join for i in range(len(board)))]
+		lst = [(filler_char or ' ')+''.join(replacments.get(conversion:=_convert_to_coor(i, numeric_coordinates, mixed_coordinates or alpha_coordinates), conversion)+(join_upper_coordinates if join_upper_coordinates else vertical_join) for i in range(len(board)))]
 	else:
 		lst = []
 
@@ -363,6 +363,10 @@ def format_2048_board(board, *, image=False, custom_number_dict={}, font='ClearS
 
 if __name__ == '__main__':
 	print(__name__)
+
+	board = [[' ',' ',' '],[' ','x',' '],[' ',' ',' ']]
+	print(format_tictactoe_board(board, mixed_coordinates=True, vertical_join=' | ', horizontal_join='\n  +---+---+---+', join_upper_coordinates='   ', filler_char='    '))
+
 	# im = Image.new('RGBA', (150, 150), color=(255, 255, 0, 170))
 	# im.save('chess\\chess_highlight.png')
 	# format_chess_game('rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR', past_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', image=True, board_theme='graffiti', peice_theme='graffiti', mixed_coordinates=True).show()
