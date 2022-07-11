@@ -362,6 +362,7 @@ def format_2048_board(board, *, image=False, custom_number_dict={}, font='ClearS
 		return _format_board(board, **kwargs)
 
 if __name__ == '__main__':
+	print(__name__)
 	# im = Image.new('RGBA', (150, 150), color=(255, 255, 0, 170))
 	# im.save('chess\\chess_highlight.png')
 	# format_chess_game('rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR', past_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', image=True, board_theme='graffiti', peice_theme='graffiti', mixed_coordinates=True).show()
