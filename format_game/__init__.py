@@ -190,7 +190,7 @@ def format_hangman_game(errors, *, image=False, dead_face=False):
 		file_path = os.path.join(os.path.dirname(__file__), 'hangman')
 		file_name = f"hangman{errors}{'_' if (errors==6 and dead_face) else ''}.png"
 
-		im = Image.open(file_path+'\\'+file_name)
+		im = Image.open(file_path+'/'+file_name)
 		return im
 	else:
 		head = "()" if errors > 0 else "  "
@@ -319,7 +319,7 @@ def format_chess_captures(captures, *, bg_color=(0,0,0,0), theme='green', image=
 
 		for x, capture in enumerate(captures):
 			if capture != ' ':
-				peice = Image.open(f"{peice_path}\\{'w' if capture.isupper() else 'b'}{capture.lower()}.png").convert('RGBA')
+				peice = Image.open(f"{peice_path}/{'w' if capture.isupper() else 'b'}{capture.lower()}.png").convert('RGBA')
 				im.paste(peice, (x*image_size, 0), peice)
 
 		draw = ImageDraw.Draw(im)
@@ -366,7 +366,5 @@ if __name__ == '__main__':
 	# im.save('chess\\chess_highlight.png')
 	# format_chess_game('rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR', past_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', image=True, board_theme='graffiti', peice_theme='graffiti', mixed_coordinates=True).show()
 	# format_chess_captures('PPPPPNNBRQ', sort_captures=True, other_captures='pppppppnnbrq', image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
-	# format_chess_captures('pppppppnnbrq', sort_captures=True, other_captures='PPPPPNNBRQ', image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
-	format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
-
-
+	# format_chess_captures('pppppppnnbrq', sort_captures=True, image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
+	# format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
