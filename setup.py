@@ -6,7 +6,7 @@ desc = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="format_game",
-    version="1.0.0",
+    version="1.0.1",
     description="A python module that allows you to format various games",
     long_description=desc,
     long_description_content_type="text/markdown",
