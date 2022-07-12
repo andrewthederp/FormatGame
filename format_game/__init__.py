@@ -82,6 +82,65 @@ _number_dict = {
 	"2048": ((235, 192, 45), 30)
 }
 
+_2048_dict = {
+	"2": {
+		'square_rgb':(236, 226, 216),
+		'font_size':50,
+		'letter_rgb':(119, 110, 101)
+	},
+	"4": {
+		'square_rgb':(236, 223, 199),
+		'font_size':50,
+		'letter_rgb':(119, 110, 101)
+	},
+	"8": {
+		'square_rgb':(241, 176, 120),
+		'font_size':50,
+		'letter_rgb':(249, 246, 242)
+	},
+	"16": {
+		'square_rgb':(244, 148, 99),
+		'font_size':50,
+		'letter_rgb':(249, 246, 242)
+	},
+	"32": {
+		'square_rgb':(245, 123, 94),
+		'font_size':50,
+		'letter_rgb':(249, 246, 242)
+	},
+	"64": {
+		'square_rgb':(245, 93, 58),
+		'font_size':50,
+		'letter_rgb':(249, 246, 242)
+	},
+	"128": {
+		'square_rgb':(235, 205, 112),
+		'font_size':40,
+		'letter_rgb':(249, 246, 242)
+	},
+	"256": {
+		'square_rgb':(235, 202, 95),
+		'font_size':40,
+		'letter_rgb':(249, 246, 242)
+	},
+	"512": {
+		'square_rgb':(235, 198, 79),
+		'font_size':40,
+		'letter_rgb':(249, 246, 242)
+	},
+	"1024": {
+		'square_rgb':(235, 195, 61),
+		'font_size':30,
+		'letter_rgb':(249, 246, 242)
+	},
+	"2048": {
+		'square_rgb':(235, 192, 45),
+		'font_size':30,
+		'letter_rgb':(249, 246, 242)
+	}
+}
+
+
 def _convert_to_coor(num, numeric_coordinates, alpha_coordinates):
 	if numeric_coordinates:
 		return str(num+1)
@@ -111,18 +170,18 @@ def _flat(fen):
 			fen[num] = int(i)*' '
 	return ''.join(fen)
 
-def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacments={}, codeblock=False, filler_char=None, prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None):
+def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=None, prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None):
 	if (numeric_coordinates and mixed_coordinates) or (numeric_coordinates and alpha_coordinates) or (mixed_coordinates and alpha_coordinates):
 		return
 
 	coordinates = bool(numeric_coordinates or mixed_coordinates or alpha_coordinates)
 	if coordinates:
-		lst = [(filler_char or ' ')+''.join(replacments.get(conversion:=_convert_to_coor(i, numeric_coordinates, mixed_coordinates or alpha_coordinates), conversion)+(join_upper_coordinates if join_upper_coordinates else vertical_join) for i in range(len(board)))]
+		lst = [(filler_char or ' ')+''.join(replacements.get(conversion:=_convert_to_coor(i, numeric_coordinates, mixed_coordinates or alpha_coordinates), conversion)+(join_upper_coordinates if join_upper_coordinates else vertical_join) for i in range(len(board)))]
 	else:
 		lst = []
 
 	for num, row in enumerate(board):
-		lst.append(replacments.get(conversion:=_convert_to_coor(num, numeric_coordinates or mixed_coordinates, alpha_coordinates), conversion)+vertical_join+''.join([replacments.get(col, col)+vertical_join for col in row]))
+		lst.append(replacements.get(conversion:=_convert_to_coor(num, numeric_coordinates or mixed_coordinates, alpha_coordinates), conversion)+vertical_join+''.join([replacements.get(col, col)+vertical_join for col in row]))
 
 	string = ''.join([row_prefix+row+row_suffix+horizontal_join+'\n' for row in lst])
 	if codeblock:
@@ -329,34 +388,35 @@ def format_chess_captures(captures, *, bg_color=(0,0,0,0), theme='green', image=
 		style_dict = {True:Style.BRIGHT,False:Fore.BLACK}
 		return ''.join([style_dict[char.isupper()]+char+'\033[39m' if ansi_color and char != ' ' else char for char in captures]) + (f" {'+' if value_diff+extra_value_diff > 0 else ''}{value_diff+extra_value_diff}" if value_diff+extra_value_diff else "")
 
-def format_2048_board(board, *, image=False, custom_number_dict={}, font='ClearSans-Bold.ttf', **kwargs):
+def format_2048_board(board, *, image=False, custom_2048_dict={}, font='ClearSans-Bold.ttf', empty_rgb=(205, 193, 180), **kwargs):
 	if image:
-		im = Image.new('RGB', (519,519), color=(187, 173, 160))
+		im = Image.new('RGBA', (519,519), color=(0,0,0,0))
 		draw = ImageDraw.Draw(im)
+
+		draw.rounded_rectangle((0, 0, 519, 519), radius=5, width=0, fill=(187, 173, 160))
 
 		size = 106
 		offset = 19
 
 		font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), 'fonts', font), 10)
 
-		number_dict = {k: custom_number_dict.get(k, v) for k, v in _number_dict.items()}
+		_2048_dict_copy = _2048_dict.copy()
+		_2048_dict_copy.update(custom_2048_dict)
 
 		for y, row in enumerate(board):
 			for x, col in enumerate(row):
 				x_, y_ = (x*size)+(offset*(x+1)), (y*size)+(offset*(y+1))
 
 				if col in [' ', 0, '0', '']:
-					draw.rounded_rectangle((x_, y_, x_+size, y_+size), radius=5, width=0, fill=(205, 193, 180))
+					draw.rounded_rectangle((x_, y_, x_+size, y_+size), radius=5, width=0, fill=empty_rgb)
 				elif isinstance(col, int) or col.isdigit:
-					try:
-						color = number_dict[str(col)][0]
-						font_size = number_dict[str(col)][1]
-					except KeyError:
-						color = (58, 56, 48)
-						font_size = 30
+					color = _2048_dict_copy.get(str(col), {}).get('square_rgb', (58, 56, 48))
+					font_size = _2048_dict_copy.get(str(col), {}).get('font_size', 30)
+					letter_rgb = _2048_dict_copy.get(str(col), {}).get('letter_rgb', (249, 246, 242))
+
 					font = font.font_variant(size=font_size)
 					draw.rounded_rectangle((x_, y_, x_+size, y_+size), radius=5, width=0, fill=color)
-					draw.text((x_+(size//2), y_+(size//2)), str(col), fill=(119, 110, 101) if str(col) in ['2','4'] else (249, 246, 242), anchor='mm', font=font)
+					draw.text((x_+(size//2), y_+(size//2)), str(col), fill=letter_rgb, anchor='mm', font=font)
 		return im
 	else:
 		return _format_board(board, **kwargs)
@@ -364,12 +424,12 @@ def format_2048_board(board, *, image=False, custom_number_dict={}, font='ClearS
 if __name__ == '__main__':
 	print(__name__)
 
-	board = [[' ',' ',' '],[' ','x',' '],[' ',' ',' ']]
-	print(format_tictactoe_board(board, mixed_coordinates=True, vertical_join=' | ', horizontal_join='\n  +---+---+---+', join_upper_coordinates='   ', filler_char='    '))
+	# board = [['x','o','x'],['x','x','o'],['o','x','o']]
+	# print(format_tictactoe_board(board, mixed_coordinates=True, vertical_join=' | ', horizontal_join='\n  +---+---+---+', join_upper_coordinates='   ', filler_char='    ', replacements={'x':Fore.RED+'x'+Fore.RESET, 'o':Fore.BLUE+'o'+Fore.RESET}).replace('+',Fore.BLACK+'+'+Fore.RESET))
 
 	# im = Image.new('RGBA', (150, 150), color=(255, 255, 0, 170))
 	# im.save('chess\\chess_highlight.png')
 	# format_chess_game('rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR', past_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', image=True, board_theme='graffiti', peice_theme='graffiti', mixed_coordinates=True).show()
 	# format_chess_captures('PPPPPNNBRQ', sort_captures=True, other_captures='pppppppnnbrq', image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
 	# format_chess_captures('pppppppnnbrq', sort_captures=True, image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
-	# format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
+	format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
