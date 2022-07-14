@@ -170,11 +170,21 @@ def _flat(fen):
 			fen[num] = int(i)*' '
 	return ''.join(fen)
 
-def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=None, prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None):
+def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=None, prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None, join_sideways_coordinates=None):
 	if (numeric_coordinates and mixed_coordinates) or (numeric_coordinates and alpha_coordinates) or (mixed_coordinates and alpha_coordinates):
 		return
 
 	coordinates = bool(numeric_coordinates or mixed_coordinates or alpha_coordinates)
+
+
+	if join_sideways_coordinates:
+		horizontal_join = join_sideways_coordinates+horizontal_join
+	elif coordinates:
+		horizontal_join = '  '+horizontal_join
+
+	if horizontal_join:
+		horizontal_join = '\n'+horizontal_join
+
 	if coordinates:
 		lst = [(filler_char or ' ')+''.join(replacements.get(conversion:=_convert_to_coor(i, numeric_coordinates, mixed_coordinates or alpha_coordinates), conversion)+(join_upper_coordinates if join_upper_coordinates else vertical_join) for i in range(len(board)))]
 	else:
@@ -262,7 +272,7 @@ def format_hangman_game(errors, *, image=False, dead_face=False):
 			f" {head}\n{left_arm}{torso}{right_arm}\n {left_leg}{right_leg}"
 		)
 
-def format_chess_game(fen, *, image=False, past_fen=None, ansi_color=False, board_theme='green', peice_theme='green', font_color=(0,0,0), font='bahnschrift.ttf', **kwargs):
+def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, board_theme='green', peice_theme='green', font_color=(0,0,0), font='bahnschrift.ttf', **kwargs):
 	if image:
 		ansi_color = False
 	if past_fen:
@@ -424,12 +434,12 @@ def format_2048_board(board, *, image=False, custom_2048_dict={}, font='ClearSan
 if __name__ == '__main__':
 	print(__name__)
 
-	# board = [['x','o','x'],['x','x','o'],['o','x','o']]
-	# print(format_tictactoe_board(board, mixed_coordinates=True, vertical_join=' | ', horizontal_join='\n  +---+---+---+', join_upper_coordinates='   ', filler_char='    ', replacements={'x':Fore.RED+'x'+Fore.RESET, 'o':Fore.BLUE+'o'+Fore.RESET}).replace('+',Fore.BLACK+'+'+Fore.RESET))
+	board = [['x','o','x'],['x','x','o'],['o','x','o']]
+	print(format_tictactoe_board(board, mixed_coordinates=True, vertical_join=' | ', horizontal_join='+---+---+---+', join_upper_coordinates=' | ', join_sideways_coordinates='+---', filler_char='  | ', replacements={'x':Fore.RED+'x'+Fore.RESET, 'o':Fore.BLUE+'o'+Fore.RESET}, prefix='+---+---+---+---+\n', row_prefix='| ').replace('+',Fore.BLACK+'+'+Fore.RESET))
 
 	# im = Image.new('RGBA', (150, 150), color=(255, 255, 0, 170))
 	# im.save('chess\\chess_highlight.png')
-	# format_chess_game('rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR', past_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', image=True, board_theme='graffiti', peice_theme='graffiti', mixed_coordinates=True).show()
+	# format_chess_board('rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR', past_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', image=True, board_theme='graffiti', peice_theme='graffiti', mixed_coordinates=True).show()
 	# format_chess_captures('PPPPPNNBRQ', sort_captures=True, other_captures='pppppppnnbrq', image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
 	# format_chess_captures('pppppppnnbrq', sort_captures=True, image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
-	format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
+	# format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
