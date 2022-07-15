@@ -1,6 +1,14 @@
 from PIL import Image, ImageDraw, ImageFont
 from colorama import Fore, Back, Style, init
+
+try:
+	from .colors import get_color
+except ImportError:
+	from colors import get_color
+
 import os, random, math
+
+
 
 init()
 
@@ -68,75 +76,62 @@ _chess_font_colors = {
 }
 
 
-_number_dict = {
-	"2": ((236, 226, 216), 50),
-	"4": ((236, 223, 199), 50),
-	"8":  ((241, 176, 120), 50),
-	"16": ((244, 148, 99), 50),
-	"32": ((245, 123, 94), 50),
-	"64": ((245, 93, 58), 50),
-	"128": ((235, 205, 112), 40),
-	"256": ((235, 202, 95), 40),
-	"512": ((235, 198, 79), 40),
-	"1024": ((235, 195, 61), 30),
-	"2048": ((235, 192, 45), 30)
-}
 
 _2048_dict = {
 	"2": {
 		'square_rgb':(236, 226, 216),
 		'font_size':50,
-		'letter_rgb':(119, 110, 101)
+		'letter_color':(119, 110, 101)
 	},
 	"4": {
 		'square_rgb':(236, 223, 199),
 		'font_size':50,
-		'letter_rgb':(119, 110, 101)
+		'letter_color':(119, 110, 101)
 	},
 	"8": {
 		'square_rgb':(241, 176, 120),
 		'font_size':50,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	},
 	"16": {
 		'square_rgb':(244, 148, 99),
 		'font_size':50,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	},
 	"32": {
 		'square_rgb':(245, 123, 94),
 		'font_size':50,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	},
 	"64": {
 		'square_rgb':(245, 93, 58),
 		'font_size':50,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	},
 	"128": {
 		'square_rgb':(235, 205, 112),
 		'font_size':40,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	},
 	"256": {
 		'square_rgb':(235, 202, 95),
 		'font_size':40,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	},
 	"512": {
 		'square_rgb':(235, 198, 79),
 		'font_size':40,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	},
 	"1024": {
 		'square_rgb':(235, 195, 61),
 		'font_size':30,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	},
 	"2048": {
 		'square_rgb':(235, 192, 45),
 		'font_size':30,
-		'letter_rgb':(249, 246, 242)
+		'letter_color':(249, 246, 242)
 	}
 }
 
@@ -170,7 +165,7 @@ def _flat(fen):
 			fen[num] = int(i)*' '
 	return ''.join(fen)
 
-def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=None, prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None, join_sideways_coordinates=None):
+def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=' ', prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None, join_sideways_coordinates=None, connect_coordinates_at='tl', invert_lr_coordinates=False, invert_tb_coordinates=False):
 	if (numeric_coordinates and mixed_coordinates) or (numeric_coordinates and alpha_coordinates) or (mixed_coordinates and alpha_coordinates):
 		return
 
@@ -179,34 +174,65 @@ def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, 
 
 	if join_sideways_coordinates:
 		horizontal_join = join_sideways_coordinates+horizontal_join
-	elif coordinates:
+	elif coordinates and connect_coordinates_at in ['tl','bl']:
 		horizontal_join = '  '+horizontal_join
 
-	if horizontal_join:
-		horizontal_join = '\n'+horizontal_join
-
-	if coordinates:
-		lst = [(filler_char or ' ')+''.join(replacements.get(conversion:=_convert_to_coor(i, numeric_coordinates, mixed_coordinates or alpha_coordinates), conversion)+(join_upper_coordinates if join_upper_coordinates else vertical_join) for i in range(len(board)))]
+	if coordinates and connect_coordinates_at in ['tr','tl']:
+		top_cordinates = filler_char
+		top_cordinates += ''.join(replacements.get(conversion:=_convert_to_coor((len(board)-1)-num if invert_tb_coordinates else num, numeric_coordinates, mixed_coordinates or alpha_coordinates), conversion)+(join_upper_coordinates if join_upper_coordinates else vertical_join) for num in range(len(board)))
+		lst = [top_cordinates]
 	else:
 		lst = []
 
-	for num, row in enumerate(board):
-		lst.append(replacements.get(conversion:=_convert_to_coor(num, numeric_coordinates or mixed_coordinates, alpha_coordinates), conversion)+vertical_join+''.join([replacements.get(col, col)+vertical_join for col in row]))
+	if horizontal_join:
+		lst.append(horizontal_join)
 
-	string = ''.join([row_prefix+row+row_suffix+horizontal_join+'\n' for row in lst])
+	for num, row in enumerate(board):
+		temp_lst = [row_prefix]
+
+		if coordinates and connect_coordinates_at in ['tl','bl']:
+			coordinate = _convert_to_coor((len(row)-1)-num if invert_lr_coordinates else num, numeric_coordinates or mixed_coordinates, alpha_coordinates)
+			coordinate = replacements.get(coordinate, coordinate)
+			temp_lst.append(coordinate)
+			temp_lst.append(vertical_join)
+
+		for col in row:
+			temp_lst.append(replacements.get(col, col)+vertical_join)
+
+		if coordinates and connect_coordinates_at in ['tr','br']:
+			coordinate = _convert_to_coor((len(row)-1)-num if invert_lr_coordinates else num, numeric_coordinates or mixed_coordinates, alpha_coordinates)
+			coordinate = replacements.get(coordinate, coordinate)
+			temp_lst.append(coordinate)
+
+		temp_lst.append(row_suffix)
+		lst.append(''.join(temp_lst))
+		lst.append(horizontal_join)
+
+	if coordinates and connect_coordinates_at in ['br','bl']:
+		bottom_coordinates = filler_char
+		bottom_coordinates += ''.join(replacements.get(conversion:=_convert_to_coor((len(board)-1)-num if invert_tb_coordinates else num, numeric_coordinates, mixed_coordinates or alpha_coordinates), conversion)+(join_upper_coordinates if join_upper_coordinates else vertical_join) for num in range(len(board)))
+		lst.append(bottom_coordinates)
+
+	string = '\n'.join(lst)
 	if codeblock:
 		return '```\n'+prefix+string+suffix+'\n```'
 	return prefix+string+suffix
 
 def format_tictactoe_board(board, *, image=False, bg_color=(210,210,210), x_color=(255, 0, 0), o_color=(0, 0, 255), font_color=(0,0,0), line_color=(0,0,0), strikethrough=None, strikethrough_color=None, font='bahnschrift.ttf', **kwargs):
 	if image:
-
 		numeric_coordinates = kwargs.get('numeric_coordinates')
 		mixed_coordinates = kwargs.get('mixed_coordinates')
 		alpha_coordinates = kwargs.get('alpha_coordinates')
 
 		if (numeric_coordinates and mixed_coordinates) or (numeric_coordinates and alpha_coordinates) or (mixed_coordinates and alpha_coordinates):
 			return
+
+		bg_color = get_color(bg_color)
+		x_color = get_color(x_color)
+		o_color = get_color(o_color)
+		font_color = get_color(font_color)
+		line_color = get_color(line_color)
+		strikethrough_color = get_color(strikethrough_color)
 
 		font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), 'fonts', font), 20)
 
@@ -272,7 +298,7 @@ def format_hangman_game(errors, *, image=False, dead_face=False):
 			f" {head}\n{left_arm}{torso}{right_arm}\n {left_leg}{right_leg}"
 		)
 
-def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, board_theme='green', peice_theme='green', font_color=(0,0,0), font='bahnschrift.ttf', **kwargs):
+def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, board_theme='green', peice_theme='green', font='bahnschrift.ttf', flip=False, **kwargs):
 	if image:
 		ansi_color = False
 	if past_fen:
@@ -299,6 +325,8 @@ def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, boa
 					tmp_lst.append(col)
 		fen_.append(tmp_lst)
 
+	fen_ = [i[::-1] for i in fen_][::-1] if flip else fen_
+
 	if image:
 		numeric_coordinates = kwargs.get('numeric_coordinates')
 		mixed_coordinates = kwargs.get('mixed_coordinates')
@@ -317,7 +345,7 @@ def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, boa
 
 		if past_fen:
 			highlight = Image.open(os.path.join(os.path.dirname(__file__), 'chess', 'chess_highlight.png')).convert('RGBA')
-			moved_peice = _get_moved_piece(fen, past_fen)
+			moved_peice = _get_moved_piece(fen[::-1] if flip else fen, past_fen[::-1] if flip else past_fen)
 			for x, y in moved_peice:
 				x = x*im.size[0]//8
 				y = y*im.size[1]//8
@@ -331,11 +359,11 @@ def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, boa
 
 				if x == 0:
 					color = _chess_font_colors[board_theme][y%2]
-					coor = _convert_to_coor(y, numeric_coordinates, alpha_coordinates or mixed_coordinates)
+					coor = _convert_to_coor(7-y if flip else y, numeric_coordinates, alpha_coordinates or mixed_coordinates)
 					draw.text((x_+(im.size[0]//8)-25, y_+im.size[1]-25), coor, fill=color, font=font)
 				if y == 0:
 					color = _chess_font_colors[board_theme][0 if(x%2)else 1]
-					coor = _convert_to_coor(7-x, numeric_coordinates or mixed_coordinates, alpha_coordinates)
+					coor = _convert_to_coor(x if flip else 7-x, numeric_coordinates or mixed_coordinates, alpha_coordinates)
 					draw.text((x_+5, y_+5), coor, fill=color, font=font)
 
 				if fen_[x][y] != ' ':
@@ -344,6 +372,11 @@ def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, boa
 					im.paste(peice, (x_, y_), peice)
 		return im
 	else:
+		kwargs['connect_coordinates_at'] = 'bl'
+		if flip:
+			kwargs['invert_tb_coordinates'] = True
+		else:
+			kwargs['invert_lr_coordinates'] = True
 		return _format_board(fen_, **kwargs)
 
 def format_chess_captures(captures, *, bg_color=(0,0,0,0), theme='green', image=False, add_gap=True, ansi_color=False, sort_captures=True, extra_value_diff=0, overlap=True, font='bahnschrift.ttf', font_color=(0,0,0), other_captures=None):
@@ -372,11 +405,16 @@ def format_chess_captures(captures, *, bg_color=(0,0,0,0), theme='green', image=
 			except IndexError:
 				pass
 	if image:
+		bg_color = get_color(bg_color)
+		font_color = get_color(font_color)
+
 		image_size = 150
+
+		width = 0
 
 		if value_diff:
 			width += int(math.log10(abs(value_diff))+1)*image_size
-		width = 0
+
 		if overlap:
 			image_size //= 2
 			width += image_size
@@ -398,12 +436,14 @@ def format_chess_captures(captures, *, bg_color=(0,0,0,0), theme='green', image=
 		style_dict = {True:Style.BRIGHT,False:Fore.BLACK}
 		return ''.join([style_dict[char.isupper()]+char+'\033[39m' if ansi_color and char != ' ' else char for char in captures]) + (f" {'+' if value_diff+extra_value_diff > 0 else ''}{value_diff+extra_value_diff}" if value_diff+extra_value_diff else "")
 
-def format_2048_board(board, *, image=False, custom_2048_dict={}, font='ClearSans-Bold.ttf', empty_rgb=(205, 193, 180), **kwargs):
+def format_2048_board(board, *, image=False, custom_2048_dict={}, font='ClearSans-Bold.ttf', empty_color=(205, 193, 180), **kwargs):
 	if image:
+		empty_color = get_color(empty_color)
+
 		im = Image.new('RGBA', (519,519), color=(0,0,0,0))
 		draw = ImageDraw.Draw(im)
 
-		draw.rounded_rectangle((0, 0, 519, 519), radius=5, width=0, fill=(187, 173, 160))
+		draw.rounded_rectangle((0, 0, 519, 519), radius=25, width=0, fill=(187, 173, 160))
 
 		size = 106
 		offset = 19
@@ -418,28 +458,42 @@ def format_2048_board(board, *, image=False, custom_2048_dict={}, font='ClearSan
 				x_, y_ = (x*size)+(offset*(x+1)), (y*size)+(offset*(y+1))
 
 				if col in [' ', 0, '0', '']:
-					draw.rounded_rectangle((x_, y_, x_+size, y_+size), radius=5, width=0, fill=empty_rgb)
+					draw.rounded_rectangle((x_, y_, x_+size, y_+size), radius=5, width=0, fill=empty_color)
 				elif isinstance(col, int) or col.isdigit:
 					color = _2048_dict_copy.get(str(col), {}).get('square_rgb', (58, 56, 48))
 					font_size = _2048_dict_copy.get(str(col), {}).get('font_size', 30)
-					letter_rgb = _2048_dict_copy.get(str(col), {}).get('letter_rgb', (249, 246, 242))
+					letter_color = _2048_dict_copy.get(str(col), {}).get('letter_color', (249, 246, 242))
+
+					color = get_color(color)
+					letter_color = get_color(letter_color)
 
 					font = font.font_variant(size=font_size)
 					draw.rounded_rectangle((x_, y_, x_+size, y_+size), radius=5, width=0, fill=color)
-					draw.text((x_+(size//2), y_+(size//2)), str(col), fill=letter_rgb, anchor='mm', font=font)
+					draw.text((x_+(size//2), y_+(size//2)), str(col), fill=letter_color, anchor='mm', font=font)
 		return im
 	else:
 		return _format_board(board, **kwargs)
 
 if __name__ == '__main__':
 	print(__name__)
+	# import random
+	# from colors import COLORS
 
-	board = [['x','o','x'],['x','x','o'],['o','x','o']]
-	print(format_tictactoe_board(board, mixed_coordinates=True, vertical_join=' | ', horizontal_join='+---+---+---+', join_upper_coordinates=' | ', join_sideways_coordinates='+---', filler_char='  | ', replacements={'x':Fore.RED+'x'+Fore.RESET, 'o':Fore.BLUE+'o'+Fore.RESET}, prefix='+---+---+---+---+\n', row_prefix='| ').replace('+',Fore.BLACK+'+'+Fore.RESET))
+	# board = [['x','o','x'],['x','x','o'],['o','x','o']]
+	# print(format_tictactoe_board(board, mixed_coordinates=True, vertical_join=' | ', horizontal_join='+---+---+---+', join_upper_coordinates='   ', filler_char='    ', replacements={'x':Fore.RED+'x'+Fore.RESET, 'o':Fore.BLUE+'o'+Fore.RESET}, connect_coordinates_at='tl').replace('+',Fore.BLACK+'+'+Fore.RESET))
 
-	# im = Image.new('RGBA', (150, 150), color=(255, 255, 0, 170))
-	# im.save('chess\\chess_highlight.png')
-	# format_chess_board('rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR', past_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR', image=True, board_theme='graffiti', peice_theme='graffiti', mixed_coordinates=True).show()
-	# format_chess_captures('PPPPPNNBRQ', sort_captures=True, other_captures='pppppppnnbrq', image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
-	# format_chess_captures('pppppppnnbrq', sort_captures=True, image=True, bg_color=(40, 40, 40), theme='light', font_color=(170, 170, 170)).show()
+	im = Image.new('RGBA', (150, 150), color=(241, 231, 64, 245))
+	im.save('chess\\chess_highlight.png')
+	format_chess_board('rnbqkbnr/pppp1ppp/8/4p3/3P4/5N2/PPP1PPPP/RNBQKB1R', past_fen='rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR', image=True, mixed_coordinates=True, flip=False).show()
+
+	# color=random.choice(list(COLORS.keys()))
+	# rgb = get_color(color)
+	# print(color+':', rgb)
+	# im = Image.new('RGBA', (200, 200), color=rgb)
+	# im.show()
+
+	# format_chess_captures('PPPPPNNBRQ', sort_captures=True, other_captures='pppppppnnbrq', image=True, theme='8bit').show()
+
+	# format_chess_captures('pppppppnnbrq', sort_captures=True, image=True, bg_color=(40, 40, 40), theme='light', font_color=0x000000).show()
+
 	# format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
