@@ -207,15 +207,17 @@ def _flat(fen):
 			fen[num] = int(i)*' '
 	return ''.join(fen)
 
-def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=' ', prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None, join_sideways_coordinates=None, connect_coordinates_at='tl', invert_lr_coordinates=False, invert_tb_coordinates=False):
+def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=' ', prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join=None, join_upper_coordinates=None, join_sideways_coordinates=None, connect_coordinates_at='tl', invert_lr_coordinates=False, invert_tb_coordinates=False):
 	if (numeric_coordinates and mixed_coordinates) or (numeric_coordinates and alpha_coordinates) or (mixed_coordinates and alpha_coordinates):
 		return
 
 	coordinates = bool(numeric_coordinates or mixed_coordinates or alpha_coordinates)
 
 
-	if join_sideways_coordinates:
+	if join_sideways_coordinates and connect_coordinates_at in ['tl','bl']:
 		horizontal_join = join_sideways_coordinates+horizontal_join
+	elif join_sideways_coordinates and connect_coordinates_at in ['tr','br']:
+		horizontal_join = horizontal_join+join_sideways_coordinates
 	elif coordinates and connect_coordinates_at in ['tl','bl']:
 		horizontal_join = '  '+horizontal_join
 
@@ -248,7 +250,8 @@ def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, 
 
 		temp_lst.append(row_suffix)
 		lst.append(''.join(temp_lst))
-		lst.append(horizontal_join)
+		if horizontal_join:
+			lst.append(horizontal_join)
 
 	if coordinates and connect_coordinates_at in ['br','bl']:
 		bottom_coordinates = filler_char
@@ -616,6 +619,8 @@ if __name__ == '__main__':
 	# im.save('chess\\chess_highlight.png')
 	# format_chess_board('rnbqkbnr/pppp1ppp/8/4p3/3P4/5N2/PPP1PPPP/RNBQKB1R', past_fen='rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR', image=True, mixed_coordinates=True, flip=False).show()
 
+	# print(format_chess_board('rnbqkbnr/pppp1ppp/8/4p3/3P4/5N2/PPP1PPPP/RNBQKB1R', mixed_coordinates=True, flip=False, vertical_join=' | ', horizontal_join='+---'*8+'+', join_upper_coordinates='   ', filler_char='    '))
+
 	# color=random.choice(list(COLORS.keys()))
 	# rgb = get_color(color)
 	# print(color+':', rgb)
@@ -628,31 +633,33 @@ if __name__ == '__main__':
 
 	# format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
 
-	flag_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'windows_xp_flag.png')
-	mine_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'mine.png')
-	flag = Image.open(flag_path)
-	mine = Image.open(mine_path)
-	flag = flag.resize((135, 135))
-	mine = mine.resize((135, 135))
-	flag.save(flag_path)
-	mine.save(mine_path)
 
-	board = [[' ' for _ in range(8)] for _ in range(8)]
-	board[0][0] = '0'
-	board[0][1] = '1'
-	board[0][2] = '2'
-	board[0][3] = '3'
-	board[0][4] = '4'
-	board[0][5] = '5'
-	board[0][6] = '6'
-	board[0][7] = '7'
-	board[1][0] = '8'
-	board[1][1] = 'f'
-	board[2][1] = '8'
-	board[1][2] = 'b'
-	board[1][3] = 'b'
-	board[1][4] = 'b'
-	board[1][5] = 'b'
-	board[1][6] = 'b'
-	board[1][7] = 'b'
-	format_minesweeper_board(board, image=True, theme='windows_xp', font='lcd.ttf').show()
+
+	# flag_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'windows_xp_flag.png')
+	# mine_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'mine.png')
+	# flag = Image.open(flag_path)
+	# mine = Image.open(mine_path)
+	# flag = flag.resize((135, 135))
+	# mine = mine.resize((135, 135))
+	# flag.save(flag_path)
+	# mine.save(mine_path)
+
+	# board = [[' ' for _ in range(8)] for _ in range(8)]
+	# board[0][0] = '0'
+	# board[0][1] = '1'
+	# board[0][2] = '2'
+	# board[0][3] = '3'
+	# board[0][4] = '4'
+	# board[0][5] = '5'
+	# board[0][6] = '6'
+	# board[0][7] = '7'
+	# board[1][0] = '8'
+	# board[1][1] = 'f'
+	# board[2][1] = '8'
+	# board[1][2] = 'b'
+	# board[1][3] = 'b'
+	# board[1][4] = 'b'
+	# board[1][5] = 'b'
+	# board[1][6] = 'b'
+	# board[1][7] = 'b'
+	# format_minesweeper_board(board, image=True, theme='windows_xp', font='lcd.ttf').show()
