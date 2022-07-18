@@ -135,6 +135,40 @@ _2048_dict = {
 	}
 }
 
+_minesweeper_dict = {
+	'1':0x1976d2,
+	'2':0x388e3c,
+	'3':0xd32f2f,
+	'4':0x8027a2,
+	'5':0xdeaa1f,
+	'6':0x0998a6,
+	'7':0x4b4947,
+	'8':0x9e9e9e,
+	'bomb1':{
+		'color': 0xed44b5,
+		'darker_color': 0x9a2c76
+	},
+	'bomb2':{
+		'color': 0xb648f2,
+		'darker_color': 0x762f9d
+	},
+	'bomb3':{
+		'color': 0x4885ed,
+		'darker_color': 0x2f569a
+	},
+	'bomb4':{
+		'color': 0xefbe0d,
+		'darker_color': 0x9f7e08
+	},
+	'bomb5':{
+		'color': 0x48e6f1,
+		'darker_color': 0x2f969d
+	},
+	'bomb6':{
+		'color': 0xf4840d,
+		'darker_color': 0x9f5608
+	},
+}
 
 def _convert_to_coor(num, numeric_coordinates, alpha_coordinates):
 	if numeric_coordinates:
@@ -142,6 +176,14 @@ def _convert_to_coor(num, numeric_coordinates, alpha_coordinates):
 	elif alpha_coordinates:
 		return chr(num+ord('a'))
 	return ''
+
+def _get_relative_neighbours(x, y, *, min_num = 0, max_num = 100):
+	dct = {'right':(x+1, y), 'left':(x-1, y), 'down':(x, y+1), 'up':(x, y-1)}
+
+	for key, value in dct.items():
+		if not (coor in range(min_num, max_num+1)):
+			dct.pop(key)
+	return dct
 
 def _get_moved_piece(fen, old_fen):
 
@@ -280,7 +322,7 @@ def format_tictactoe_board(board, *, image=False, bg_color=(210,210,210), x_colo
 	else:
 		return _format_board(board, **kwargs)
 
-def format_hangman_game(errors, *, image=False, dead_face=False):
+def format_hangman_game(errors, *, image=False, dead_face=False, word=None):
 	if image:
 		file_path = os.path.join(os.path.dirname(__file__), 'hangman')
 		file_name = f"hangman{errors}{'_' if (errors==6 and dead_face) else ''}.png"
@@ -294,9 +336,10 @@ def format_hangman_game(errors, *, image=False, dead_face=False):
 		right_arm = "\\" if errors > 3 else " "
 		left_leg = "/" if errors > 4 else " "
 		right_leg = "\\" if errors > 5 else " "
-		return (
-			f" {head}\n{left_arm}{torso}{right_arm}\n {left_leg}{right_leg}"
-		)
+
+		string = f" {head}\n{left_arm}{torso}{right_arm}\n {left_leg}{right_leg}"
+		string += '\n\n'+' '.join(word) if word else ''
+		return string
 
 def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, board_theme='green', peice_theme='green', font='bahnschrift.ttf', flip=False, **kwargs):
 	if image:
@@ -474,6 +517,93 @@ def format_2048_board(board, *, image=False, custom_2048_dict={}, font='ClearSan
 	else:
 		return _format_board(board, **kwargs)
 
+def format_minesweeper_board(board, *, image=False, theme='custom', dark_unclicked=0xa2d149, light_unclicked=0xaad751, light_clicked=0xe5c29f, dark_clicked=0xd7b899, custom_minesweeper_dict={}, font='Roboto-Medium.ttf', **kwargs):
+	if image:
+		cell_size = 150
+		width = len(board)*cell_size
+		height = len(board[0])*cell_size
+		font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), 'fonts', font), 120)
+		flag_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'{theme}_flag.png')
+		flag = Image.open(flag_path).convert('RGBA')
+
+		im = Image.new('RGBA', (width, height), (0,0,0,0))
+		draw = ImageDraw.Draw(im)
+
+		_minesweeper_dict_copy = _minesweeper_dict.copy()
+		_minesweeper_dict_copy.update(custom_minesweeper_dict)
+
+		draw_cell = lambda x, y, col: None
+
+		if theme == 'custom':
+			dark_unclicked = get_color(dark_unclicked)
+			dark_clicked = get_color(dark_clicked)
+			light_unclicked = get_color(light_unclicked)
+			light_clicked = get_color(light_clicked)
+
+			bomb_dicts = [dct for name, dct in _minesweeper_dict_copy.items() if name.startswith('bomb')]
+
+			def draw_cell(x, y, col):
+				dark_or_light = (x+(y%2))%2 # 0 = light, 1 = dark
+				if col in [' ', '', 'f', 'flag']:
+					draw.rectangle([(x*cell_size, y*cell_size), ((x+1)*cell_size, (y+1)*cell_size)], fill=dark_unclicked if dark_or_light else light_unclicked)
+				else:
+					draw.rectangle([(x*cell_size, y*cell_size), ((x+1)*cell_size, (y+1)*cell_size)], fill=dark_clicked if dark_or_light else light_clicked)
+
+				if (isinstance(col, int) or col.isdigit()) and str(col) != '0':
+					color = _minesweeper_dict.get(str(col))
+					color = get_color(color)
+					draw.text(((x*cell_size)+(cell_size//2), (y*cell_size)+(cell_size//2)), str(col), fill=color, anchor='mm', font=font)
+				elif col.lower() in ['f', 'flag']:
+					im.paste(flag, (x*cell_size, y*cell_size), flag)
+				elif col.lower() in ['b', 'bomb']:
+					dct = random.choice(bomb_dicts)
+					color = get_color(dct['color'])
+					darker_color = get_color(dct['darker_color'])
+					draw.rectangle([(x*cell_size, y*cell_size), ((x+1)*cell_size, (y+1)*cell_size)], fill=color)
+					coors = [((x*cell_size), (y*cell_size)), (((x+1)*cell_size), ((y+1)*cell_size))]
+					draw.ellipse([(coors[0][0])+cell_size//4, (coors[0][1])+cell_size//4, (coors[1][0])-cell_size//4, (coors[1][1])-cell_size//4], fill=darker_color)
+		elif theme == 'windows_xp':
+			mine_path = os.path.join(os.path.dirname(__file__), 'minesweeper', 'mine.png')
+			mine = Image.open(mine_path).convert('RGBA')
+			cell_color = get_color(0xbfbfbf)
+			cell_light_line = get_color(0xf0f0f0)
+			cell_dark_line = get_color(0x8b8b8c)
+
+			def draw_cell(x, y, col):
+				x_, y_ = (x*cell_size, y*cell_size)
+				if col in [' ', '', 'f', 'flag']:
+					draw.rectangle([(x_, y_), (x_+cell_size, y_+cell_size)], fill=cell_color)
+					draw.line((x_, y_) + (x_, y_+(cell_size-5)), fill=cell_light_line, width=10)
+					draw.line((x_, y_) + (x_+(cell_size-5), y_), fill=cell_light_line, width=10)
+					draw.line((x_+(cell_size-8), y_) + (x_+(cell_size-8), y_+(cell_size-8)), fill=cell_dark_line, width=8)
+					draw.line((x_, y_+(cell_size-8)) + (x_+(cell_size-8), y_+(cell_size-8)), fill=cell_dark_line, width=8)
+				else:
+					draw.rectangle([(x*cell_size, y*cell_size), ((x+1)*cell_size, (y+1)*cell_size)], fill=cell_color)
+
+					draw.line((x_, y_) + (x_, y_+cell_size), fill=cell_dark_line, width=10)
+					draw.line((x_, y_) + (x_+cell_size, y_), fill=cell_dark_line, width=10)
+					draw.line((x_+cell_size, y_) + (x_+cell_size, y_+cell_size), fill=cell_dark_line, width=10)
+					draw.line((x_, y_+cell_size) + (x_+cell_size, y_+cell_size), fill=cell_dark_line, width=10)
+
+				if (isinstance(col, int) or col.isdigit()) and str(col) != '0':
+					color = _minesweeper_dict.get(str(col))
+					color = get_color(color)
+					draw.text(((x*cell_size)+(cell_size//2), (y*cell_size)+(cell_size//2)), str(col), fill=color, anchor='mm', font=font)
+				elif col.lower() in ['f', 'flag']:
+					im.paste(flag, (x_, y_), flag)
+				elif col.lower() in ['b', 'bomb']:
+					im.paste(mine, (x_+8, y_+8), mine)
+
+
+		for y, row in enumerate(board):
+			for x, col in enumerate(row):
+				draw_cell(x, y, col)
+
+		return im
+	else:
+		return _format_board(board, **kwargs)
+
+
 if __name__ == '__main__':
 	print(__name__)
 	# import random
@@ -482,9 +612,9 @@ if __name__ == '__main__':
 	# board = [['x','o','x'],['x','x','o'],['o','x','o']]
 	# print(format_tictactoe_board(board, mixed_coordinates=True, vertical_join=' | ', horizontal_join='+---+---+---+', join_upper_coordinates='   ', filler_char='    ', replacements={'x':Fore.RED+'x'+Fore.RESET, 'o':Fore.BLUE+'o'+Fore.RESET}, connect_coordinates_at='tl').replace('+',Fore.BLACK+'+'+Fore.RESET))
 
-	im = Image.new('RGBA', (150, 150), color=(241, 231, 64, 245))
-	im.save('chess\\chess_highlight.png')
-	format_chess_board('rnbqkbnr/pppp1ppp/8/4p3/3P4/5N2/PPP1PPPP/RNBQKB1R', past_fen='rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR', image=True, mixed_coordinates=True, flip=False).show()
+	# im = Image.new('RGBA', (150, 150), color=(241, 231, 64, 245))
+	# im.save('chess\\chess_highlight.png')
+	# format_chess_board('rnbqkbnr/pppp1ppp/8/4p3/3P4/5N2/PPP1PPPP/RNBQKB1R', past_fen='rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR', image=True, mixed_coordinates=True, flip=False).show()
 
 	# color=random.choice(list(COLORS.keys()))
 	# rgb = get_color(color)
@@ -497,3 +627,32 @@ if __name__ == '__main__':
 	# format_chess_captures('pppppppnnbrq', sort_captures=True, image=True, bg_color=(40, 40, 40), theme='light', font_color=0x000000).show()
 
 	# format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
+
+	flag_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'windows_xp_flag.png')
+	mine_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'mine.png')
+	flag = Image.open(flag_path)
+	mine = Image.open(mine_path)
+	flag = flag.resize((135, 135))
+	mine = mine.resize((135, 135))
+	flag.save(flag_path)
+	mine.save(mine_path)
+
+	board = [[' ' for _ in range(8)] for _ in range(8)]
+	board[0][0] = '0'
+	board[0][1] = '1'
+	board[0][2] = '2'
+	board[0][3] = '3'
+	board[0][4] = '4'
+	board[0][5] = '5'
+	board[0][6] = '6'
+	board[0][7] = '7'
+	board[1][0] = '8'
+	board[1][1] = 'f'
+	board[2][1] = '8'
+	board[1][2] = 'b'
+	board[1][3] = 'b'
+	board[1][4] = 'b'
+	board[1][5] = 'b'
+	board[1][6] = 'b'
+	board[1][7] = 'b'
+	format_minesweeper_board(board, image=True, theme='windows_xp', font='lcd.ttf').show()
