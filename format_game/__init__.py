@@ -207,7 +207,7 @@ def _flat(fen):
 			fen[num] = int(i)*' '
 	return ''.join(fen)
 
-def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=' ', prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join=None, join_upper_coordinates=None, join_sideways_coordinates=None, connect_coordinates_at='tl', invert_lr_coordinates=False, invert_tb_coordinates=False):
+def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, alpha_coordinates=False, replacements={}, codeblock=False, filler_char=' ', prefix='', suffix='', row_prefix='', row_suffix='', vertical_join='', horizontal_join='', join_upper_coordinates=None, join_sideways_coordinates='', connect_coordinates_at='tl', invert_lr_coordinates=False, invert_tb_coordinates=False):
 	if (numeric_coordinates and mixed_coordinates) or (numeric_coordinates and alpha_coordinates) or (mixed_coordinates and alpha_coordinates):
 		return
 
@@ -218,8 +218,6 @@ def _format_board(board, *, numeric_coordinates=False, mixed_coordinates=False, 
 		horizontal_join = join_sideways_coordinates+horizontal_join
 	elif join_sideways_coordinates and connect_coordinates_at in ['tr','br']:
 		horizontal_join = horizontal_join+join_sideways_coordinates
-	elif coordinates and connect_coordinates_at in ['tl','bl']:
-		horizontal_join = '  '+horizontal_join
 
 	if coordinates and connect_coordinates_at in ['tr','tl']:
 		top_cordinates = filler_char
