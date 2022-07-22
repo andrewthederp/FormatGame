@@ -693,7 +693,7 @@ def get_color(color):
 		b = int(hx_[7:9],16)
 
 		return (r, g, b)
-	elif isinstance(color, NoneType):
-		return (0,0,0)
+	elif isinstance(color, type(None)):
+		return (0,0,0,0)
 
 	raise InvalidColor(f"{color!r} is not a valid color")
