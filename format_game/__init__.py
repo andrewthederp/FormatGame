@@ -323,13 +323,38 @@ def format_tictactoe_board(board, *, image=False, bg_color=(210,210,210), x_colo
 	else:
 		return _format_board(board, **kwargs)
 
-def format_hangman_game(errors, *, image=False, dead_face=False, word=None):
+def format_hangman_game(errors, *, image=False, dead_face=False, word=None, font='Pencil.ttf'):
+	if word:
+		if isinstance(word, list):
+			word = ' '.join(word)
+
 	if image:
 		file_path = os.path.join(os.path.dirname(__file__), 'hangman')
 		file_name = f"hangman{errors}{'_' if (errors==6 and dead_face) else ''}.png"
 
-		im = Image.open(file_path+'/'+file_name)
-		return im
+		hangman_im = Image.open(file_path+'/'+file_name)
+		if word:
+
+			width, height = hangman_im.size
+			im = Image.new('RGB', (width*2, height+(height//2)), color=(255,255,255))
+			draw = ImageDraw.Draw(im)
+
+			im.paste(hangman_im, (width//2,0))
+
+			height = height*2+80
+			width *= 2
+
+			size = int(min(height, width)/((len(word)))) 
+			font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), 'fonts', font), size)
+			text_height = font.getbbox(word)[3]*2 - font.getbbox(word)[1]
+			text_width = font.getbbox(word)[2] - font.getbbox(word)[0]
+
+			x = (width - text_width)/2
+			y = (height - text_height)/2
+
+			draw.text((x, y), word, fill=(0,0,0), font=font)
+			return im
+		return hangman_im
 	else:
 		head = "()" if errors > 0 else "  "
 		torso = "||" if errors > 1 else "  "
@@ -339,7 +364,7 @@ def format_hangman_game(errors, *, image=False, dead_face=False, word=None):
 		right_leg = "\\" if errors > 5 else " "
 
 		string = f" {head}\n{left_arm}{torso}{right_arm}\n {left_leg}{right_leg}"
-		string += '\n\n'+' '.join(word) if word else ''
+		string += '\n\n'+ word if word else ''
 		return string
 
 def format_chess_board(fen, *, image=False, past_fen=None, ansi_color=False, board_theme='green', peice_theme='green', font='bahnschrift.ttf', flip=False, **kwargs):
@@ -631,7 +656,7 @@ if __name__ == '__main__':
 
 	# format_2048_board([['2','4','8','16'],['32','64','128','256'],['512','1024','2048','4096'],['8192',' ',' ',' ']], image=True).show()
 
-
+	# format_hangman_game(3, image=True, word='h_ll_').show()
 
 	# flag_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'windows_xp_flag.png')
 	# mine_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'mine.png')
