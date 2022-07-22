@@ -543,12 +543,13 @@ def format_2048_board(board, *, image=False, custom_2048_dict={}, font='ClearSan
 	else:
 		return _format_board(board, **kwargs)
 
-def format_minesweeper_board(board, *, image=False, theme='custom', dark_unclicked=0xa2d149, light_unclicked=0xaad751, light_clicked=0xe5c29f, dark_clicked=0xd7b899, custom_minesweeper_dict={}, font='Roboto-Medium.ttf', **kwargs):
+def format_minesweeper_board(board, *, image=False, theme='custom', dark_unclicked=0xa2d149, light_unclicked=0xaad751, light_clicked=0xe5c29f, dark_clicked=0xd7b899, custom_minesweeper_dict={}, font='Roboto-Medium.ttf', coordinate_font='bahnschrift.ttf', coordinate_color=(0,0,0), **kwargs):
 	if image:
 		cell_size = 150
 		width = len(board)*cell_size
 		height = len(board[0])*cell_size
 		font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), 'fonts', font), 120)
+		coordinate_font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), 'fonts', coordinate_font), 35)
 		flag_path = os.path.join(os.path.dirname(__file__), 'minesweeper', f'{theme}_flag.png')
 		flag = Image.open(flag_path).convert('RGBA')
 
@@ -560,6 +561,11 @@ def format_minesweeper_board(board, *, image=False, theme='custom', dark_unclick
 
 		draw_cell = lambda x, y, col: None
 
+		numeric_coordinates = kwargs.get('numeric_coordinates')
+		mixed_coordinates = kwargs.get('mixed_coordinates')
+		alpha_coordinates = kwargs.get('alpha_coordinates')
+
+
 		if theme == 'custom':
 			dark_unclicked = get_color(dark_unclicked)
 			dark_clicked = get_color(dark_clicked)
@@ -570,6 +576,7 @@ def format_minesweeper_board(board, *, image=False, theme='custom', dark_unclick
 
 			def draw_cell(x, y, col):
 				dark_or_light = (x+(y%2))%2 # 0 = light, 1 = dark
+				x_, y_ = (x*cell_size, y*cell_size)
 				if col in [' ', '', 'f', 'flag']:
 					draw.rectangle([(x*cell_size, y*cell_size), ((x+1)*cell_size, (y+1)*cell_size)], fill=dark_unclicked if dark_or_light else light_unclicked)
 				else:
@@ -588,21 +595,20 @@ def format_minesweeper_board(board, *, image=False, theme='custom', dark_unclick
 					draw.rectangle([(x*cell_size, y*cell_size), ((x+1)*cell_size, (y+1)*cell_size)], fill=color)
 					coors = [((x*cell_size), (y*cell_size)), (((x+1)*cell_size), ((y+1)*cell_size))]
 					draw.ellipse([(coors[0][0])+cell_size//4, (coors[0][1])+cell_size//4, (coors[1][0])-cell_size//4, (coors[1][1])-cell_size//4], fill=darker_color)
+
 		elif theme == 'windows_xp':
 			mine_path = os.path.join(os.path.dirname(__file__), 'minesweeper', 'mine.png')
+			cell_path = os.path.join(os.path.dirname(__file__), 'minesweeper', 'windows_xp_cell.png')
 			mine = Image.open(mine_path).convert('RGBA')
+			cell = Image.open(cell_path).convert('RGBA')
+
 			cell_color = get_color(0xbfbfbf)
-			cell_light_line = get_color(0xf0f0f0)
 			cell_dark_line = get_color(0x8b8b8c)
 
 			def draw_cell(x, y, col):
 				x_, y_ = (x*cell_size, y*cell_size)
 				if col in [' ', '', 'f', 'flag']:
-					draw.rectangle([(x_, y_), (x_+cell_size, y_+cell_size)], fill=cell_color)
-					draw.line((x_, y_) + (x_, y_+(cell_size-5)), fill=cell_light_line, width=10)
-					draw.line((x_, y_) + (x_+(cell_size-5), y_), fill=cell_light_line, width=10)
-					draw.line((x_+(cell_size-8), y_) + (x_+(cell_size-8), y_+(cell_size-8)), fill=cell_dark_line, width=8)
-					draw.line((x_, y_+(cell_size-8)) + (x_+(cell_size-8), y_+(cell_size-8)), fill=cell_dark_line, width=8)
+					im.paste(cell, (x_, y_))
 				else:
 					draw.rectangle([(x*cell_size, y*cell_size), ((x+1)*cell_size, (y+1)*cell_size)], fill=cell_color)
 
@@ -624,6 +630,13 @@ def format_minesweeper_board(board, *, image=False, theme='custom', dark_unclick
 		for y, row in enumerate(board):
 			for x, col in enumerate(row):
 				draw_cell(x, y, col)
+				x_, y_ = (x*cell_size, y*cell_size)
+				if x == 0:
+					coor = _convert_to_coor(y, numeric_coordinates, alpha_coordinates or mixed_coordinates)
+					draw.text((x_+5, y_+(cell_size-35)), coor, fill=coordinate_color, font=coordinate_font)
+				if y == 0:
+					coor = _convert_to_coor(x, numeric_coordinates or mixed_coordinates, alpha_coordinates)
+					draw.text((x_+(cell_size-25), y_+5), coor, fill=coordinate_color, font=coordinate_font)
 
 		return im
 	else:
@@ -631,6 +644,9 @@ def format_minesweeper_board(board, *, image=False, theme='custom', dark_unclick
 
 
 if __name__ == '__main__':
+	### TESTS ###
+
+
 	print(__name__)
 	# import random
 	# from colors import COLORS
@@ -685,4 +701,4 @@ if __name__ == '__main__':
 	# board[1][5] = 'b'
 	# board[1][6] = 'b'
 	# board[1][7] = 'b'
-	# format_minesweeper_board(board, image=True, theme='windows_xp', font='lcd.ttf').show()
+	# format_minesweeper_board(board, image=True, mixed_coordinates=True).show()
